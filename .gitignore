@@ -1,0 +1,61 @@
+# ── Secretos y credenciales ─────────────────────────────────────────────
+# Claves de API (Anthropic, ElevenLabs, Google Calendar). Solo se sube la plantilla.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
+token*.json
+client_secret*.json
+service_account*.json
+
+# ── Datos personales y estado en ejecución ──────────────────────────────
+# Memoria de Jarvis, logs, sincronización del calendario, perfil del navegador del HUD...
+memory/
+data/
+logs/
+*.log
+*.sqlite
+*.sqlite3
+*.db
+
+# Grabaciones de voz y audio generado
+recordings/
+*.wav
+*.mp3
+*.ogg
+*.flac
+
+# Modelos descargados (Whisper, wake word)
+models/
+*.onnx
+*.tflite
+
+# ── Python ──────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# ── Tests, linters y cobertura ──────────────────────────────────────────
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# ── Editores y sistema operativo ────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Ajustes locales de Claude Code
+.claude/settings.local.json

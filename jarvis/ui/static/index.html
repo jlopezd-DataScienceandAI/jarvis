@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>J.A.R.V.I.S</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23060B14'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%2338E1FF' stroke-width='2' stroke-dasharray='40 23'/%3E%3Ccircle cx='16' cy='16' r='4.5' fill='%2338E1FF'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#060B14}
+.hud{--c:#38E1FF;--c2:rgba(56,225,255,0.18)}
+.hud.m-listening{--c:#7CF0C8;--c2:rgba(124,240,200,0.18)}
+.hud.m-thinking,.hud.m-starting{--c:#FFB547;--c2:rgba(255,181,71,0.18)}
+.hud.m-speaking{--c:#38E1FF;--c2:rgba(56,225,255,0.22)}
+.hud.m-offline{--c:#8FA6BF;--c2:rgba(143,166,191,0.14)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes spinrev{to{transform:rotate(-360deg)}}
+@keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 40px var(--c2),inset 0 0 30px var(--c2)}50%{transform:scale(1.06);box-shadow:0 0 80px var(--c2),inset 0 0 50px var(--c2)}}
+@keyframes bar{0%,100%{transform:scaleY(0.15)}50%{transform:scaleY(1)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.25}}
+@keyframes scan{0%{transform:translateY(-100%)}100%{transform:translateY(100%)}}
+@keyframes caret{0%,49%{opacity:1}50%,100%{opacity:0}}
+.ring-a{animation:spin 48s linear infinite}
+.ring-b{animation:spinrev 32s linear infinite}
+.ring-c{animation:spin 6s linear infinite}
+.m-listening .ring-c{animation-duration:3s}
+.m-thinking .ring-c{animation-duration:1.1s}
+.m-thinking .ring-b{animation-duration:10s}
+.m-starting .ring-c{animation-duration:2.2s}
+.m-speaking .ring-c{animation-duration:2s}
+.core{animation:pulse 4s ease-in-out infinite}
+.m-listening .core{animation-duration:1.6s}
+.m-thinking .core{animation-duration:0.9s}
+.m-starting .core{animation-duration:2s}
+.m-speaking .core{animation-duration:1.2s}
+.bar{display:block;width:4px;height:48px;border-radius:2px;background:var(--c);transform-origin:center;transform:scaleY(0.15);animation:bar 2.4s ease-in-out infinite;opacity:0.4}
+.m-listening .bar{animation-duration:1s;opacity:1}
+.m-thinking .bar{animation-duration:0.5s;opacity:0.8}
+.m-speaking .bar{animation-duration:0.7s;opacity:1}
+.dot{animation:blink 2s ease-in-out infinite}
+.scan{position:absolute;left:0;right:0;top:0;height:100%;background:linear-gradient(to bottom,transparent,rgba(56,225,255,0.05),transparent);animation:scan 7s linear infinite;pointer-events:none}
+.caret{animation:caret 1s steps(1) infinite}
+.m-offline .ring-a,.m-offline .ring-b,.m-offline .ring-c,.m-offline .core,.m-offline .bar,.m-offline .dot,.m-offline .scan{animation-play-state:paused}
+button{font-family:inherit}
+button:focus-visible,input:focus-visible{outline:2px solid #fff;outline-offset:3px}
+input::placeholder{color:#8FA6BF}
+.panel{border:1px solid rgba(56,225,255,0.22);border-radius:12px;background:rgba(10,22,38,0.72);padding:18px;display:flex;flex-direction:column}
+.panel[hidden]{display:none}
+.panel h2{margin:0;font-size:12px;font-weight:500;letter-spacing:0.2em;color:#8FA6BF;text-transform:uppercase}
+.eq{display:flex;align-items:center;gap:3px;height:22px;flex:none;color:var(--c)}
+.eq span{display:block;width:3px;height:22px;border-radius:2px;background:var(--c);transform-origin:center;animation:bar 0.9s ease-in-out infinite}
+.eq span:nth-child(2){animation-delay:0.25s}
+.eq span:nth-child(3){animation-delay:0.5s}
+.eq span:nth-child(4){animation-delay:0.1s}
+.m-offline .eq span{animation-play-state:paused}
+.mono{font-family:'JetBrains Mono',monospace}
+.row{display:flex;justify-content:space-between;gap:12px;font-size:14px}
+.badge{font-family:'JetBrains Mono',monospace;font-size:12px}
+@media (prefers-reduced-motion:reduce){.ring-a,.ring-b,.ring-c,.core,.bar,.dot,.scan,.caret,.eq span{animation:none}}
+</style>
+</head>
+<body>
+<div id="hud" class="hud m-starting" style="position: relative; overflow: hidden; min-height: 100vh; box-sizing: border-box; padding: 28px; display: flex; flex-direction: column; gap: 22px; background: radial-gradient(ellipse at 50% 38%, #0D2236 0%, #060B14 62%); color: #DCE8F5; font-family: 'Space Grotesk', system-ui, sans-serif">
+<div class="scan" aria-hidden="true"></div>
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+<div style="display: flex; align-items: center; gap: 14px">
+<span class="dot" aria-hidden="true" style="width: 10px; height: 10px; border-radius: 50%; background: var(--c); box-shadow: 0 0 12px var(--c)"></span>
+<h1 style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0.42em; color: #FFFFFF">J.A.R.V.I.S</h1>
+<span id="status" class="mono" style="font-size: 12px; color: #8FA6BF; letter-spacing: 0.08em">INICIANDO</span>
+</div>
+<div style="text-align: right">
+<div id="clock" class="mono" style="font-size: 28px; font-weight: 500; color: var(--c); letter-spacing: 0.06em">--:--:--</div>
+<div id="date" style="font-size: 13px; color: #8FA6BF">&nbsp;</div>
+</div>
+</header>
+
+<main style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch; flex: 1">
+
+<section aria-label="Sistema" style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<div class="panel" style="gap: 16px">
+<h2>Sistema</h2>
+<div>
+<div class="row" style="font-size: 13px; margin-bottom: 6px"><span>CPU</span><span id="cpu-text" class="mono" style="color: var(--c)">0%</span></div>
+<div style="height: 6px; border-radius: 3px; background: rgba(143,166,191,0.18); overflow: hidden"><div id="cpu-bar" style="height: 100%; border-radius: 3px; background: var(--c); transition: width 0.9s ease; width: 0%"></div></div>
+</div>
+<div>
+<div class="row" style="font-size: 13px; margin-bottom: 6px"><span>Memoria</span><span id="mem-text" class="mono" style="color: var(--c)">0%</span></div>
+<div style="height: 6px; border-radius: 3px; background: rgba(143,166,191,0.18); overflow: hidden"><div id="mem-bar" style="height: 100%; border-radius: 3px; background: var(--c); transition: width 0.9s ease; width: 0%"></div></div>
+</div>
+<div>
+<div class="row" style="font-size: 13px; margin-bottom: 6px"><span>Red</span><span id="net-text" class="mono" style="color: var(--c)">0 Mb/s</span></div>
+<div style="height: 6px; border-radius: 3px; background: rgba(143,166,191,0.18); overflow: hidden"><div id="net-bar" style="height: 100%; border-radius: 3px; background: var(--c); transition: width 0.9s ease; width: 0%"></div></div>
+</div>
+</div>
+<div class="panel" style="gap: 12px">
+<h2>Servicios</h2>
+<div class="row"><span>Micrófono</span><span id="svc-mic" class="badge">CARGANDO</span></div>
+<div class="row"><span>Modelo de lenguaje</span><span id="svc-brain" class="badge">CARGANDO</span></div>
+<div class="row"><span>Voz</span><span id="svc-voice" class="badge">CARGANDO</span></div>
+<div class="row"><span>Calendario</span><span id="svc-calendar" class="badge">SIN CONFIGURAR</span></div>
+</div>
+<div id="music" class="panel" aria-label="Música que está sonando" hidden style="flex-direction: row; align-items: center; gap: 14px; padding: 14px 18px">
+<img id="music-cover" alt="" style="width: 48px; height: 48px; flex: none; border-radius: 8px; object-fit: cover; border: 1px solid rgba(56,225,255,0.22)">
+<div id="music-nocover" aria-hidden="true" style="width: 48px; height: 48px; flex: none; border-radius: 8px; border: 1px solid rgba(56,225,255,0.22); background: var(--c2); color: var(--c); display: flex; align-items: center; justify-content: center">
+<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg>
+</div>
+<div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px">
+<h2 id="music-label" style="font-size: 11px">Sonando</h2>
+<div id="music-title" style="font-size: 14px; font-weight: 500; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"></div>
+<div id="music-artist" style="font-size: 12px; color: #8FA6BF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"></div>
+</div>
+<div class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+</div>
+</section>
+
+<section aria-label="Asistente" style="flex: 2 1 420px; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px">
+<div style="position: relative; width: min(340px, 38vh); aspect-ratio: 1; flex: none; color: var(--c)">
+<svg class="ring-a" aria-hidden="true" viewBox="0 0 340 340" style="position: absolute; inset: 0; width: 100%; height: 100%">
+<circle cx="170" cy="170" r="164" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3 9" opacity="0.7"></circle>
+<circle cx="170" cy="170" r="154" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"></circle>
+</svg>
+<svg class="ring-b" aria-hidden="true" viewBox="0 0 340 340" style="position: absolute; inset: 0; width: 100%; height: 100%">
+<circle cx="170" cy="170" r="130" fill="none" stroke="currentColor" stroke-width="5" stroke-dasharray="2 12" opacity="0.55"></circle>
+</svg>
+<svg class="ring-c" aria-hidden="true" viewBox="0 0 340 340" style="position: absolute; inset: 0; width: 100%; height: 100%">
+<circle cx="170" cy="170" r="108" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="150 530"></circle>
+<circle cx="170" cy="170" r="108" fill="none" stroke="currentColor" stroke-width="1" opacity="0.25"></circle>
+</svg>
+<button id="orb" class="core" type="button" aria-label="Hablar con Jarvis, o interrumpirle si está hablando" style="position: absolute; inset: 27.94%; border-radius: 50%; border: 1px solid var(--c); cursor: pointer; color: var(--c); background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.22) 0%, var(--c2) 45%, rgba(6,11,20,0.9) 100%); display: flex; align-items: center; justify-content: center; padding: 0">
+<svg aria-hidden="true" viewBox="0 0 24 24" style="width: 30%; height: 30%" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path></svg>
+</button>
+</div>
+
+<div style="text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center">
+<div id="mode-label" class="mono" style="font-size: 15px; letter-spacing: 0.32em; color: var(--c)">INICIANDO</div>
+<div aria-live="polite" style="min-height: 48px; max-width: 460px; font-size: 17px; line-height: 1.5; color: #DCE8F5"><span id="live-text">Cargando el oído, la voz y el cerebro…</span><span class="caret" aria-hidden="true" style="color: var(--c)"> ▍</span></div>
+</div>
+
+<div id="bars" aria-hidden="true" style="display: flex; align-items: center; justify-content: center; gap: 5px; height: 48px; color: var(--c)"></div>
+</section>
+
+<section aria-label="Agenda y dispositivos" style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<div class="panel" style="gap: 14px">
+<h2>Hoy</h2>
+<div id="today" style="display: flex; flex-direction: column; gap: 14px"></div>
+</div>
+<div class="panel" aria-label="Consumo de voz y de modelo" style="gap: 14px">
+<h2>Consumo</h2>
+<div>
+<div class="row" style="font-size: 13px; margin-bottom: 6px"><span>Voz · ElevenLabs</span><span id="use-voice-text" class="mono" style="color: var(--c)">—</span></div>
+<div id="use-voice-track" style="height: 6px; border-radius: 3px; background: rgba(143,166,191,0.18); overflow: hidden"><div id="use-voice-bar" style="height: 100%; border-radius: 3px; background: var(--c); transition: width 0.9s ease; width: 0%"></div></div>
+<div id="use-voice-note" style="margin-top: 6px; font-size: 12px; line-height: 1.4; color: #8FA6BF; overflow-wrap: anywhere">Esperando datos…</div>
+</div>
+<div>
+<div class="row" style="font-size: 13px; margin-bottom: 6px"><span>Modelo · Claude</span><span id="use-brain-text" class="mono" style="color: var(--c)">—</span></div>
+<div id="use-brain-track" hidden style="height: 6px; border-radius: 3px; background: rgba(143,166,191,0.18); overflow: hidden"><div id="use-brain-bar" style="height: 100%; border-radius: 3px; background: var(--c); transition: width 0.9s ease; width: 0%"></div></div>
+<div id="use-brain-note" style="margin-top: 6px; font-size: 12px; line-height: 1.4; color: #8FA6BF; overflow-wrap: anywhere">Esperando datos…</div>
+</div>
+</div>
+<div class="panel" style="gap: 14px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<h2>Dispositivos</h2>
+<span class="badge" style="color: #FFB547; letter-spacing: 0.08em">PRÓXIMAMENTE</span>
+</div>
+<div id="devices" style="display: flex; flex-direction: column; gap: 10px; opacity: 0.45"></div>
+</div>
+</section>
+</main>
+
+<footer style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+<div id="log" aria-label="Actividad reciente" class="mono" style="flex: 2 1 420px; min-width: 0; min-height: 66px; border: 1px solid rgba(56,225,255,0.22); border-radius: 12px; background: rgba(10,22,38,0.72); padding: 14px 18px; font-size: 12px; line-height: 1.8; color: #8FA6BF"></div>
+<form id="command" style="flex: 1 1 320px; min-width: 0; display: flex; gap: 10px; align-items: stretch; margin: 0">
+<label for="cmd" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Escribe un comando</label>
+<input id="cmd" type="text" autocomplete="off" maxlength="2000" placeholder="Escribe un comando…" style="flex: 1; min-width: 0; min-height: 44px; box-sizing: border-box; padding: 0 16px; border-radius: 10px; border: 1px solid rgba(56,225,255,0.35); background: rgba(6,11,20,0.8); color: #DCE8F5; font-family: 'JetBrains Mono', monospace; font-size: 14px">
+<button type="submit" style="min-height: 44px; padding: 0 20px; border-radius: 10px; border: 1px solid var(--c); background: var(--c2); color: #FFFFFF; font-size: 14px; font-weight: 500; cursor: pointer">Enviar</button>
+</form>
+</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var token = new URLSearchParams(location.search).get('token') || '';
+  var $ = function (id) { return document.getElementById(id); };
+  var hud = $('hud');
+
+  var MODES = {
+    starting: 'INICIANDO', idle: 'EN ESPERA', listening: 'ESCUCHANDO',
+    thinking: 'PENSANDO', speaking: 'HABLANDO', offline: 'DESCONECTADO'
+  };
+  var SERVICES = {
+    active: ['ACTIVO', '#7CF0C8'], loading: ['CARGANDO', '#FFB547'],
+    error: ['ERROR', '#FF8A8A'], off: ['SIN CONFIGURAR', '#8FA6BF']
+  };
+  var LOG = { ok: ['[ok]', 'var(--c)'], run: ['[..]', '#FFB547'], err: ['[!!]', '#FF8A8A'] };
+  var IDLE_HINT_AFTER_MS = 10000;
+
+  var state = { mode: 'starting', text: '', hint: '' };
+  var connected = false;
+  var hintTimer = null;
+
+  function el(tag, style, text) {
+    var node = document.createElement(tag);
+    if (style) node.style.cssText = style;
+    if (text !== undefined) node.textContent = text;  // textContent: nothing from the assistant is ever parsed as HTML
+    return node;
+  }
+
+  // ---- static decoration -------------------------------------------------
+  for (var i = 0; i < 28; i++) {
+    var bar = el('span');
+    bar.className = 'bar';
+    bar.style.animationDelay = ((i * 0.37) % 1.4).toFixed(2) + 's';
+    $('bars').appendChild(bar);
+  }
+  ['Luces del salón', 'Climatización', 'Altavoz'].forEach(function (name) {
+    var row = el('div', 'display:flex;align-items:center;justify-content:space-between;gap:12px');
+    row.appendChild(el('span', 'font-size:14px', name));
+    var toggle = el('button', 'width:52px;height:28px;padding:0;border:0;background:transparent;cursor:not-allowed;display:flex;align-items:center;justify-content:flex-end');
+    toggle.type = 'button';
+    toggle.disabled = true;
+    toggle.setAttribute('aria-label', name + ' (próximamente)');
+    var track = el('span', 'display:block;width:46px;height:24px;border-radius:12px;border:1px solid #8FA6BF;position:relative;background:rgba(143,166,191,0.12)');
+    track.appendChild(el('span', 'position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#8FA6BF'));
+    toggle.appendChild(track);
+    row.appendChild(toggle);
+    $('devices').appendChild(row);
+  });
+
+  function tick() {
+    var now = new Date();
+    $('clock').textContent = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    // "Sábado, 14 de noviembre": only the first letter is capitalised, as Spanish writes dates.
+    var date = now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    $('date').textContent = date.charAt(0).toUpperCase() + date.slice(1);
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  // ---- rendering -----------------------------------------------------------
+  function renderMode() {
+    var mode = connected ? state.mode : 'offline';
+    hud.className = 'hud m-' + mode;
+    $('mode-label').textContent = MODES[mode] || mode.toUpperCase();
+    $('status').textContent = mode === 'offline' ? 'SIN CONEXIÓN' : (mode === 'starting' ? 'INICIANDO' : 'SISTEMA EN LÍNEA');
+    $('orb').disabled = mode === 'offline' || mode === 'starting';
+    $('orb').style.cursor = $('orb').disabled ? 'default' : 'pointer';
+    if (state.services) renderServices(state.services);
+    renderMusic(state.music);
+    renderUsage(state.usage);
+
+    clearTimeout(hintTimer);
+    if (mode === 'offline') {
+      $('live-text').textContent = 'Jarvis no está en marcha. Escribe «jarvis» en una terminal para iniciarlo.';
+    } else {
+      $('live-text').textContent = state.text || state.hint;
+      if (mode === 'idle' && state.hint) {
+        // The last answer stays readable for a while, then the invitation returns.
+        hintTimer = setTimeout(function () {
+          if (connected && state.mode === 'idle') $('live-text').textContent = state.hint;
+        }, IDLE_HINT_AFTER_MS);
+      }
+    }
+  }
+
+  function renderMeters(meters) {
+    $('cpu-text').textContent = meters.cpu + '%';
+    $('cpu-bar').style.width = Math.min(100, meters.cpu) + '%';
+    $('mem-text').textContent = meters.mem + '%';
+    $('mem-bar').style.width = Math.min(100, meters.mem) + '%';
+    $('net-text').textContent = meters.net.toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' Mb/s';
+    $('net-bar').style.width = Math.min(100, meters.net * 2) + '%';
+  }
+
+  function renderServices(services) {
+    Object.keys(services).forEach(function (name) {
+      var badge = $('svc-' + name);
+      // With no connection nothing is known about the services: do not keep showing "ACTIVO".
+      var look = connected ? SERVICES[services[name]] : ['SIN DATOS', '#8FA6BF'];
+      if (!badge || !look) return;
+      badge.textContent = look[0];
+      badge.style.color = look[1];
+    });
+  }
+
+  function renderToday(items) {
+    var box = $('today');
+    box.replaceChildren();
+    if (!items.length) {
+      box.appendChild(el('div', 'font-size:14px;color:#8FA6BF', 'Nada pendiente para hoy.'));
+      return;
+    }
+    items.forEach(function (item) {
+      var row = el('div', 'display:flex;gap:14px;align-items:baseline');
+      var when = el('span', 'font-size:13px;flex:none;min-width:44px;color:' + (item.overdue ? '#FFB547' : 'var(--c)'), item.when);
+      when.className = 'mono';
+      row.appendChild(when);
+      row.appendChild(el('span', 'font-size:14px;min-width:0;overflow-wrap:anywhere', item.text));
+      box.appendChild(row);
+    });
+  }
+
+  function renderMusic(track) {
+    // Shown only while something is playing, and never from a stale connection.
+    var panel = $('music');
+    if (!track || !connected) { panel.hidden = true; return; }
+    $('music-label').textContent = 'Sonando · ' + track.app;
+    $('music-title').textContent = track.title;
+    $('music-title').title = track.title;
+    $('music-artist').textContent = track.artist;
+    // Only our own JPEG data URLs are ever used as the image source.
+    var hasCover = typeof track.cover === 'string' && track.cover.indexOf('data:image/jpeg;base64,') === 0;
+    if (hasCover) $('music-cover').src = track.cover;
+    $('music-cover').hidden = !hasCover;
+    $('music-nocover').style.display = hasCover ? 'none' : 'flex';
+    panel.hidden = false;
+  }
+
+  // ---- usage: what has been spent, and what is left ---------------------------
+  function whole(n) { return Math.round(n).toLocaleString('es-ES', { useGrouping: 'always' }); }
+  function money(usd) {
+    if (usd > 0 && usd < 0.01) return '< 0,01 $';
+    return usd.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $';
+  }
+  function tokens(n) {
+    if (n >= 1e6) return (n / 1e6).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' M de tokens';
+    if (n >= 1e4) return whole(n / 1e3) + ' mil tokens';
+    return whole(n) + ' tokens';
+  }
+  function fillBar(id, fraction) {
+    var bar = $(id);
+    var share = Math.max(0, Math.min(1, fraction));
+    bar.style.width = (share * 100) + '%';
+    // The bar is what has been used up: amber when little is left, red when almost nothing is.
+    bar.style.background = share >= 0.95 ? '#FF8A8A' : (share >= 0.8 ? '#FFB547' : 'var(--c)');
+  }
+
+  function renderUsage(usage) {
+    var voice = usage && usage.voice;
+    var brain = usage && usage.brain;
+    var known = connected && usage;
+
+    if (!known || !voice) {
+      $('use-voice-text').textContent = '—';
+      $('use-voice-note').textContent = known ? 'Consultando la cuenta…' : 'Sin datos.';
+      fillBar('use-voice-bar', 0);
+    } else if (voice.error) {
+      $('use-voice-text').textContent = 'SIN DATOS';
+      $('use-voice-note').textContent = voice.error;
+      fillBar('use-voice-bar', 0);
+    } else {
+      $('use-voice-text').textContent = whole(voice.used) + ' / ' + whole(voice.limit);
+      var note = 'Quedan ' + whole(Math.max(0, voice.limit - voice.used)) + ' caracteres';
+      if (voice.resets_at) {
+        note += ' · se renueva el ' + new Date(voice.resets_at * 1000).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+      }
+      $('use-voice-note').textContent = note;
+      fillBar('use-voice-bar', voice.limit ? voice.used / voice.limit : 0);
+    }
+
+    if (!known || !brain) {
+      $('use-brain-text').textContent = '—';
+      $('use-brain-note').textContent = 'Sin datos.';
+      $('use-brain-track').hidden = true;
+      return;
+    }
+    $('use-brain-text').textContent = money(brain.usd) + (brain.unpriced ? ' +' : '') + ' este mes';
+    var used = tokens(brain.tokens);
+    if (brain.left === null || brain.left === undefined) {
+      $('use-brain-track').hidden = true;
+      $('use-brain-note').textContent = used + ' · escribe «/saldo 12,50» con tu saldo para ver cuánto queda';
+    } else {
+      $('use-brain-track').hidden = false;
+      fillBar('use-brain-bar', brain.credit ? (brain.credit - brain.left) / brain.credit : 1);
+      $('use-brain-note').textContent = 'Quedan ' + money(brain.left) + ' de ' + money(brain.credit) + ' · ' + used;
+    }
+  }
+
+  function renderLog(entries) {
+    var box = $('log');
+    box.replaceChildren();
+    var recent = entries.slice(-3);
+    if (!recent.length) {
+      box.appendChild(el('div', '', 'Sin actividad todavía.'));
+      return;
+    }
+    recent.forEach(function (entry) {
+      var look = LOG[entry.status] || LOG.run;
+      var line = el('div', 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis');
+      line.appendChild(el('span', 'color:' + look[1], look[0]));
+      line.appendChild(document.createTextNode(' ' + entry.text));
+      box.appendChild(line);
+    });
+  }
+
+  function apply(patch) {
+    Object.assign(state, patch);
+    if ('mode' in patch || 'text' in patch || 'hint' in patch) renderMode();
+    if (patch.meters) renderMeters(patch.meters);
+    if (patch.services) renderServices(patch.services);
+    if (patch.today) renderToday(patch.today);
+    if (patch.log) renderLog(patch.log);
+    if ('music' in patch) renderMusic(patch.music);
+    if ('usage' in patch) renderUsage(patch.usage);
+  }
+
+  renderServices({ mic: 'loading', brain: 'loading', voice: 'loading', calendar: 'off' });
+  renderToday([]);
+  renderLog([]);
+
+  // ---- live connection -----------------------------------------------------
+  var source = new EventSource('/events?token=' + encodeURIComponent(token));
+  source.onopen = function () { connected = true; renderMode(); };
+  source.onmessage = function (event) { connected = true; apply(JSON.parse(event.data)); };
+  source.onerror = function () { connected = false; renderMode(); };  // EventSource retries by itself
+
+  function post(path, body) {
+    return fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Jarvis-Token': token },
+      body: body ? JSON.stringify(body) : null
+    }).catch(function () { connected = false; renderMode(); });
+  }
+
+  $('orb').addEventListener('click', function () { post('/api/activate'); });
+  $('command').addEventListener('submit', function (event) {
+    event.preventDefault();
+    var text = $('cmd').value.trim();
+    if (!text) return;
+    $('cmd').value = '';
+    post('/api/say', { text: text });
+  });
+})();
+</script>
+</body>
+</html>

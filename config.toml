@@ -1,0 +1,84 @@
+# Configuración de J.A.R.V.I.S. Los cambios se aplican al reiniciar.
+
+[user]
+# Cómo te trata Jarvis.
+address = "señor"
+# Ciudad para el tiempo y el briefing (por ejemplo "Madrid"). Vacío = sin tiempo.
+city = "Madrid"
+
+[brain]
+model = "claude-haiku-5-5"
+# low = más rápido; medium/high = más cuidadoso y más lento.
+effort = "low"
+# Cuánto habla Jarvis: "breve", "normal" o "detallado". Es solo el valor inicial: se cambia en
+# marcha escribiendo esa palabra en la consola, y lo último elegido se recuerda al reiniciar.
+verbosity = "normal"
+max_tokens = 16000
+# La conversación se reinicia tras este tiempo sin hablar...
+idle_reset_minutes = 10
+# ...o cuando el contexto supera este tamaño (por encima de 100K el precio se multiplica).
+max_context_tokens = 60000
+# Herramientas de servidor de Anthropic para la investigación web.
+web_search = true
+web_search_tool = "web_search_20250305"
+web_fetch_tool = "web_fetch_20250910"
+
+[voice]
+# ID de la voz de ElevenLabs. Vacío = la primera voz nativa en español de tu cuenta.
+# Ver voces nativas de España:  jarvis voices --library
+# Escuchar una antes de elegir: jarvis voices --try <ID>
+# Actual: "David Martin - Clear, Calm and Elegant" (castellano peninsular).
+voice_id = "y6WtESLj18d0diFRruBs"
+# eleven_v4_turbo (más expresivo) o eleven_flash_v2_5 (más barato).
+model = "eleven_v4_turbo"
+language = "es"
+output_format = "pcm_24000"
+text_normalization = true
+
+[ears]
+# tiny, base, small, medium, large-v3-turbo. Más grande = más preciso y más lento.
+whisper_model = "small"
+compute_type = "int8"
+beam_size = 5
+# Hilos de CPU para Whisper. 0 = uno por núcleo físico.
+cpu_threads = 0
+language = "es"
+# Detector rápido de «Hey Jarvis». Comprobar cómo le suena tu voz:  jarvis selftest --wake
+wake_model = "hey_jarvis"
+# Entre 0 y 1. Súbelo si se activa solo; bájalo si no te oye.
+wake_threshold = 0.5
+# Activar también con «Jarvis» a secas: dilo solo y espera al pitido (tarda alrededor de un segundo).
+# Lo reconoce Whisper, así que usa algo de CPU cada vez que alguien dice una palabra suelta cerca.
+wake_by_name = true
+# Formato de pynput: <ctrl>+<alt>+j, <f9>, ...
+hotkey = "<ctrl>+<alt>+j"
+# Silencio que marca el final de la frase.
+silence_ms = 900
+max_utterance_seconds = 20
+# Nombre (o parte del nombre) del dispositivo. Vacío = el predeterminado de Windows.
+input_device = ""
+output_device = ""
+
+[files]
+# Carpetas donde Jarvis puede buscar, leer, mover y escribir. Vacío = tu carpeta de usuario.
+allowed_roots = []
+
+[briefing]
+# Resumen hablado en el primer arranque del día.
+on_first_start = true
+
+[calendar]
+# Copia las tareas con fecha a Google Calendar para que avise también el móvil.
+# Solo funciona después de conectar tu cuenta con:  jarvis calendar setup
+enabled = true
+# Minutos de antelación del aviso en el móvil. 0 = justo a la hora.
+reminder_minutes = 0
+# Duración del evento en el calendario.
+event_minutes = 30
+
+[ui]
+# Ventana (HUD) al arrancar. Con false, o con "jarvis --no-ui", solo voz y consola.
+enabled = true
+# Tamaño inicial; se reduce solo si no cabe en la pantalla.
+width = 1280
+height = 860
