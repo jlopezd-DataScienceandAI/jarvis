@@ -1,0 +1,206 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+<title id="title">J.A.R.V.I.S. system architecture</title>
+<desc id="desc">On-device wake word, endpointing and Whisper speech recognition feed a voice loop that drives a streaming Claude tool-use agent; replies are streamed sentence by sentence to ElevenLabs. A local HUD, background services and plain-file state complete the system.</desc>
+<defs>
+<style>
+text { font-family: 'Segoe UI', Inter, -apple-system, 'Helvetica Neue', Arial, sans-serif; }
+.h1 { font-size: 26px; font-weight: 700; fill: #F8FAFC; letter-spacing: 0.5px; }
+.sub { font-size: 14px; fill: #94A3B8; }
+.t { font-size: 16px; font-weight: 600; fill: #F1F5F9; }
+.d { font-size: 13px; fill: #94A3B8; }
+.n { font-size: 13px; font-weight: 600; fill: #E2E8F0; }
+.lbl { font-size: 11px; fill: #A3B1C6; font-weight: 500; }
+.hdr { font-size: 12px; font-weight: 700; letter-spacing: 2px; }
+.region { font-size: 11px; font-weight: 700; letter-spacing: 2.2px; fill: #64748B; }
+.chip { font-size: 12px; fill: #CBD5E1; font-weight: 500; }
+.mono { font-size: 12px; fill: #CBD5E1; font-family: Consolas, 'JetBrains Mono', Menlo, monospace; }
+.pill { font-size: 11px; font-weight: 700; fill: #DDD6FE; letter-spacing: 0.8px; }
+.leg { font-size: 12px; fill: #94A3B8; }
+</style>
+<marker id="m-audio" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#22D3EE"/></marker>
+<marker id="m-ctl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7C8BA3"/></marker>
+<marker id="m-net" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#F59E0B"/></marker>
+</defs>
+<rect width="1440" height="900" rx="18" fill="#0B1120"/>
+<text x="40" y="56" class="h1" text-anchor="start" >J.A.R.V.I.S. — system architecture</text>
+<text x="40" y="82" class="sub" text-anchor="start" >Local-first Spanish voice assistant: on-device wake word and speech recognition, a streaming Claude tool-use agent, sentence-by-sentence neural speech.</text>
+<line x1="1062" y1="52" x2="1090" y2="52" stroke="#22D3EE" stroke-width="2"/>
+<text x="1098" y="56" class="leg" text-anchor="start" >audio</text>
+<line x1="1150" y1="52" x2="1178" y2="52" stroke="#7C8BA3" stroke-width="2"/>
+<text x="1186" y="56" class="leg" text-anchor="start" >control / data</text>
+<line x1="1290" y1="52" x2="1318" y2="52" stroke="#F59E0B" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="1326" y="56" class="leg" text-anchor="start" >HTTPS call</text>
+<rect x="30" y="105" width="1040" height="767" rx="14" fill="#0F172A" stroke="#1E293B"/>
+<text x="50" y="132" class="region" text-anchor="start" >ON-DEVICE  ·  WINDOWS PC</text>
+<rect x="1095" y="105" width="315" height="767" rx="14" fill="#130F0A" stroke="#F59E0B" stroke-opacity="0.35" stroke-dasharray="5 5"/>
+<text x="1115" y="132" class="region" text-anchor="start" >CLOUD APIS</text>
+<text x="1115" y="168" class="d" text-anchor="start" >HTTPS only · keys read from .env</text>
+<text x="1115" y="187" class="d" text-anchor="start" >transcribed text leaves the PC,</text>
+<text x="1115" y="206" class="d" text-anchor="start" >raw microphone audio never does</text>
+<circle cx="54" cy="155" r="4" fill="#22D3EE"/>
+<text x="66" y="159" class="hdr" text-anchor="start" fill="#22D3EE">EARS</text>
+<circle cx="374" cy="155" r="4" fill="#A78BFA"/>
+<text x="386" y="159" class="hdr" text-anchor="start" fill="#A78BFA">BRAIN</text>
+<circle cx="744" cy="155" r="4" fill="#34D399"/>
+<text x="756" y="159" class="hdr" text-anchor="start" fill="#34D399">VOICE  ·  SURFACES</text>
+<rect x="50" y="175" width="270" height="80" rx="10" fill="#121B2F" stroke="#22D3EE" stroke-opacity="0.45" stroke-width="1.2"/>
+<rect x="50" y="189" width="3" height="18" rx="1.5" fill="#22D3EE"/>
+<text x="66" y="203" class="t" text-anchor="start" >Microphone</text>
+<text x="66" y="226" class="d" text-anchor="start" >sounddevice · 16 kHz mono int16</text>
+<text x="66" y="245" class="d" text-anchor="start" >80 ms blocks, fanned out</text>
+<rect x="78" y="285" width="242" height="166" rx="10" fill="#121B2F" stroke="#22D3EE" stroke-opacity="0.45" stroke-width="1.2"/>
+<rect x="78" y="299" width="3" height="18" rx="1.5" fill="#22D3EE"/>
+<text x="94" y="313" class="t" text-anchor="start" >Wake detection</text>
+<text x="94" y="336" class="n" text-anchor="start" >openWakeWord «Hey Jarvis»</text>
+<text x="94" y="354" class="d" text-anchor="start" >instant, works mid-speech</text>
+<text x="94" y="378" class="n" text-anchor="start" >NameSpotter «Jarvis»</text>
+<text x="94" y="396" class="d" text-anchor="start" >bursts confirmed by Whisper</text>
+<text x="94" y="420" class="n" text-anchor="start" >Hotkey · HUD orb</text>
+<text x="94" y="438" class="d" text-anchor="start" >Ctrl+Alt+J or a click</text>
+<rect x="78" y="477" width="242" height="102" rx="10" fill="#121B2F" stroke="#22D3EE" stroke-opacity="0.45" stroke-width="1.2"/>
+<rect x="78" y="491" width="3" height="18" rx="1.5" fill="#22D3EE"/>
+<text x="94" y="505" class="t" text-anchor="start" >End-of-speech detection</text>
+<text x="94" y="528" class="d" text-anchor="start" >WebRTC VAD + energy gate</text>
+<text x="94" y="547" class="d" text-anchor="start" >vs. rolling room-noise level</text>
+<text x="94" y="566" class="d" text-anchor="start" >ends on ~0.9 s of quiet</text>
+<rect x="78" y="604" width="242" height="102" rx="10" fill="#121B2F" stroke="#22D3EE" stroke-opacity="0.45" stroke-width="1.2"/>
+<rect x="78" y="618" width="3" height="18" rx="1.5" fill="#22D3EE"/>
+<text x="94" y="632" class="t" text-anchor="start" >Speech-to-text</text>
+<text x="94" y="655" class="d" text-anchor="start" >faster-whisper · small · int8</text>
+<text x="94" y="674" class="d" text-anchor="start" >on CPU, Spanish</text>
+<text x="94" y="693" class="d" text-anchor="start" >hallucination filter</text>
+<circle cx="86" cy="737" r="4" fill="none" stroke="#22D3EE" stroke-width="1.6"/>
+<text x="98" y="741" class="lbl" text-anchor="start" fill="#22D3EE">Speech recognition runs fully offline</text>
+<path d="M64 255 V528 H76" fill="none" stroke="#22D3EE" stroke-width="1.8" marker-end="url(#m-audio)" stroke-linejoin="round"/>
+<path d="M64 368 H76" fill="none" stroke="#22D3EE" stroke-width="1.8" marker-end="url(#m-audio)" stroke-linejoin="round"/>
+<path d="M199 579 V602" fill="none" stroke="#22D3EE" stroke-width="1.8" marker-end="url(#m-audio)" stroke-linejoin="round"/>
+<rect x="370" y="175" width="310" height="140" rx="10" fill="#121B2F" stroke="#A78BFA" stroke-opacity="0.45" stroke-width="1.2"/>
+<rect x="370" y="189" width="3" height="18" rx="1.5" fill="#A78BFA"/>
+<text x="386" y="203" class="t" text-anchor="start" >Voice loop · state machine</text>
+<rect x="388" y="214" width="54" height="22" rx="11" fill="#A78BFA" fill-opacity="0.14" stroke="#A78BFA" stroke-opacity="0.6"/>
+<text x="415.0" y="229" class="pill" text-anchor="middle" >IDLE</text>
+<text x="454" y="230" class="d" text-anchor="middle" >→</text>
+<rect x="466" y="214" width="92" height="22" rx="11" fill="#A78BFA" fill-opacity="0.14" stroke="#A78BFA" stroke-opacity="0.6"/>
+<text x="512.0" y="229" class="pill" text-anchor="middle" >LISTENING</text>
+<text x="570" y="230" class="d" text-anchor="middle" >→</text>
+<rect x="582" y="214" width="58" height="22" rx="11" fill="#A78BFA" fill-opacity="0.14" stroke="#A78BFA" stroke-opacity="0.6"/>
+<text x="611.0" y="229" class="pill" text-anchor="middle" >BUSY</text>
+<text x="386" y="260" class="d" text-anchor="start" >one main thread drains an event queue</text>
+<text x="386" y="279" class="d" text-anchor="start" >background threads only post events</text>
+<text x="386" y="298" class="d" text-anchor="start" >barge-in: cancel flag + stop playback</text>
+<rect x="370" y="345" width="310" height="145" rx="10" fill="#121B2F" stroke="#A78BFA" stroke-opacity="0.45" stroke-width="1.2"/>
+<rect x="370" y="359" width="3" height="18" rx="1.5" fill="#A78BFA"/>
+<text x="386" y="373" class="t" text-anchor="start" >Agent loop · Claude Haiku 5.5</text>
+<text x="386" y="396" class="d" text-anchor="start" >hand-written streaming tool loop</text>
+<text x="386" y="415" class="d" text-anchor="start" >speaks deltas before the reply ends</text>
+<text x="386" y="434" class="d" text-anchor="start" >prompt cache on a frozen prefix</text>
+<text x="386" y="453" class="d" text-anchor="start" >cancellable mid-stream (barge-in)</text>
+<text x="386" y="472" class="d" text-anchor="start" >auto-reset: idle or &gt; 60K tokens</text>
+<rect x="370" y="520" width="310" height="215" rx="10" fill="#121B2F" stroke="#A78BFA" stroke-opacity="0.45" stroke-width="1.2"/>
+<rect x="370" y="534" width="3" height="18" rx="1.5" fill="#A78BFA"/>
+<text x="386" y="548" class="t" text-anchor="start" >Tool registry · 24 tools</text>
+<text x="386" y="571" class="d" text-anchor="start" >pydantic → JSON schema + validation</text>
+<text x="386" y="590" class="d" text-anchor="start" >confirmation enforced in code</text>
+<text x="386" y="609" class="d" text-anchor="start" >errors returned, never raised</text>
+<rect x="386" y="625" width="88" height="26" rx="6" fill="#A78BFA" fill-opacity="0.10" stroke="#A78BFA" stroke-opacity="0.40"/>
+<text x="430.0" y="642.0" class="chip" text-anchor="middle" >PC control</text>
+<rect x="480" y="625" width="88" height="26" rx="6" fill="#A78BFA" fill-opacity="0.10" stroke="#A78BFA" stroke-opacity="0.40"/>
+<text x="524.0" y="642.0" class="chip" text-anchor="middle" >Files</text>
+<rect x="574" y="625" width="88" height="26" rx="6" fill="#A78BFA" fill-opacity="0.10" stroke="#A78BFA" stroke-opacity="0.40"/>
+<text x="618.0" y="642.0" class="chip" text-anchor="middle" >Screen vision</text>
+<rect x="386" y="659" width="88" height="26" rx="6" fill="#A78BFA" fill-opacity="0.10" stroke="#A78BFA" stroke-opacity="0.40"/>
+<text x="430.0" y="676.0" class="chip" text-anchor="middle" >Notes &amp; tasks</text>
+<rect x="480" y="659" width="88" height="26" rx="6" fill="#A78BFA" fill-opacity="0.10" stroke="#A78BFA" stroke-opacity="0.40"/>
+<text x="524.0" y="676.0" class="chip" text-anchor="middle" >User profile</text>
+<rect x="574" y="659" width="88" height="26" rx="6" fill="#A78BFA" fill-opacity="0.10" stroke="#A78BFA" stroke-opacity="0.40"/>
+<text x="618.0" y="676.0" class="chip" text-anchor="middle" >Spotify</text>
+<rect x="386" y="693" width="88" height="26" rx="6" fill="#A78BFA" fill-opacity="0.10" stroke="#A78BFA" stroke-opacity="0.40"/>
+<text x="430.0" y="710.0" class="chip" text-anchor="middle" >Work modes</text>
+<rect x="480" y="693" width="88" height="26" rx="6" fill="#A78BFA" fill-opacity="0.10" stroke="#A78BFA" stroke-opacity="0.40"/>
+<text x="524.0" y="710.0" class="chip" text-anchor="middle" >Weather</text>
+<rect x="574" y="693" width="88" height="26" rx="6" fill="#A78BFA" fill-opacity="0.10" stroke="#A78BFA" stroke-opacity="0.40"/>
+<text x="618.0" y="710.0" class="chip" text-anchor="middle" >Media keys</text>
+<rect x="740" y="175" width="310" height="140" rx="10" fill="#121B2F" stroke="#34D399" stroke-opacity="0.45" stroke-width="1.2"/>
+<rect x="740" y="189" width="3" height="18" rx="1.5" fill="#34D399"/>
+<text x="756" y="203" class="t" text-anchor="start" >HUD · desktop window</text>
+<text x="756" y="226" class="d" text-anchor="start" >Hub keeps the latest state</text>
+<text x="756" y="245" class="d" text-anchor="start" >local HTTP + SSE on 127.0.0.1</text>
+<text x="756" y="264" class="d" text-anchor="start" >Host check + per-session token</text>
+<text x="756" y="283" class="d" text-anchor="start" >live panels: system, music, agenda</text>
+<rect x="740" y="345" width="310" height="145" rx="10" fill="#121B2F" stroke="#34D399" stroke-opacity="0.45" stroke-width="1.2"/>
+<rect x="740" y="359" width="3" height="18" rx="1.5" fill="#34D399"/>
+<text x="756" y="373" class="t" text-anchor="start" >Streamed speech</text>
+<text x="756" y="396" class="d" text-anchor="start" >SentenceChunker: deltas → sentences</text>
+<text x="756" y="415" class="d" text-anchor="start" >synthesis thread → playback thread</text>
+<text x="756" y="434" class="d" text-anchor="start" >next sentence ready before needed</text>
+<text x="756" y="453" class="d" text-anchor="start" >gapless audio to the speakers</text>
+<rect x="740" y="520" width="310" height="215" rx="10" fill="#121B2F" stroke="#34D399" stroke-opacity="0.45" stroke-width="1.2"/>
+<rect x="740" y="534" width="3" height="18" rx="1.5" fill="#34D399"/>
+<text x="756" y="548" class="t" text-anchor="start" >Background services</text>
+<text x="756" y="571" class="n" text-anchor="start" >ReminderWatcher</text>
+<text x="756" y="589" class="d" text-anchor="start" >spoken reminder + Windows toast</text>
+<text x="756" y="613" class="n" text-anchor="start" >CalendarSync</text>
+<text x="756" y="631" class="d" text-anchor="start" >tasks.md → Google Calendar</text>
+<text x="756" y="649" class="d" text-anchor="start" >idempotent ids, offline-safe</text>
+<text x="756" y="673" class="n" text-anchor="start" >UsageMeter</text>
+<text x="756" y="691" class="d" text-anchor="start" >Claude $ + ElevenLabs quota</text>
+<rect x="50" y="785" width="1000" height="70" rx="10" fill="#121B2F" stroke="#64748B" stroke-opacity="0.6"/>
+<rect x="50" y="799" width="3" height="16" rx="1.5" fill="#64748B"/>
+<text x="66" y="812" class="t" text-anchor="start" >Local state</text>
+<text x="166" y="812" class="d" text-anchor="start" >plain files, git-ignored · memory/ opens as an Obsidian vault</text>
+<rect x="66" y="822" width="152" height="24" rx="6" fill="#64748B" fill-opacity="0.10" stroke="#64748B" stroke-opacity="0.40"/>
+<text x="142.0" y="838.0" class="mono" text-anchor="middle" >memory/tasks.md</text>
+<rect x="228" y="822" width="152" height="24" rx="6" fill="#64748B" fill-opacity="0.10" stroke="#64748B" stroke-opacity="0.40"/>
+<text x="304.0" y="838.0" class="mono" text-anchor="middle" >memory/notes/</text>
+<rect x="390" y="822" width="152" height="24" rx="6" fill="#64748B" fill-opacity="0.10" stroke="#64748B" stroke-opacity="0.40"/>
+<text x="466.0" y="838.0" class="mono" text-anchor="middle" >memory/profile.md</text>
+<rect x="552" y="822" width="152" height="24" rx="6" fill="#64748B" fill-opacity="0.10" stroke="#64748B" stroke-opacity="0.40"/>
+<text x="628.0" y="838.0" class="mono" text-anchor="middle" >data/modes.yaml</text>
+<rect x="714" y="822" width="152" height="24" rx="6" fill="#64748B" fill-opacity="0.10" stroke="#64748B" stroke-opacity="0.40"/>
+<text x="790.0" y="838.0" class="mono" text-anchor="middle" >data/usage.json</text>
+<rect x="876" y="822" width="152" height="24" rx="6" fill="#64748B" fill-opacity="0.10" stroke="#64748B" stroke-opacity="0.40"/>
+<text x="952.0" y="838.0" class="mono" text-anchor="middle" >config.toml</text>
+<rect x="1115" y="230" width="275" height="130" rx="10" fill="#121B2F" stroke="#F59E0B" stroke-opacity="0.45" stroke-width="1.2"/>
+<rect x="1115" y="244" width="3" height="18" rx="1.5" fill="#F59E0B"/>
+<text x="1131" y="258" class="t" text-anchor="start" >Anthropic API</text>
+<text x="1131" y="281" class="d" text-anchor="start" >Claude Haiku 5.5 · streaming</text>
+<text x="1131" y="300" class="d" text-anchor="start" >server tools: web search + fetch</text>
+<text x="1131" y="319" class="d" text-anchor="start" >screenshots as image blocks</text>
+<text x="1131" y="338" class="d" text-anchor="start" >prompt caching</text>
+<rect x="1115" y="395" width="275" height="92" rx="10" fill="#121B2F" stroke="#F59E0B" stroke-opacity="0.45" stroke-width="1.2"/>
+<rect x="1115" y="409" width="3" height="18" rx="1.5" fill="#F59E0B"/>
+<text x="1131" y="423" class="t" text-anchor="start" >ElevenLabs</text>
+<text x="1131" y="446" class="d" text-anchor="start" >streaming TTS · eleven_v4_turbo</text>
+<text x="1131" y="465" class="d" text-anchor="start" >PCM 24 kHz · Spanish voice</text>
+<rect x="1115" y="560" width="275" height="105" rx="10" fill="#121B2F" stroke="#F59E0B" stroke-opacity="0.45" stroke-width="1.2"/>
+<rect x="1115" y="574" width="3" height="18" rx="1.5" fill="#F59E0B"/>
+<text x="1131" y="588" class="t" text-anchor="start" >Google Apps Script</text>
+<text x="1131" y="611" class="d" text-anchor="start" >user-owned web app → Calendar</text>
+<text x="1131" y="630" class="d" text-anchor="start" >phone alerts even if PC is off</text>
+<rect x="1115" y="715" width="275" height="75" rx="10" fill="#121B2F" stroke="#F59E0B" stroke-opacity="0.45" stroke-width="1.2"/>
+<rect x="1115" y="729" width="3" height="18" rx="1.5" fill="#F59E0B"/>
+<text x="1131" y="743" class="t" text-anchor="start" >Open-Meteo</text>
+<text x="1131" y="766" class="d" text-anchor="start" >weather + geocoding, no key</text>
+<path d="M320 300 H368" fill="none" stroke="#7C8BA3" stroke-width="1.8" marker-end="url(#m-ctl)" stroke-linejoin="round"/>
+<text x="345" y="292" class="lbl" text-anchor="middle" >activate</text>
+<path d="M320 655 H350 V418 H368" fill="none" stroke="#7C8BA3" stroke-width="1.8" marker-end="url(#m-ctl)" stroke-linejoin="round"/>
+<text x="343" y="540" class="lbl" text-anchor="middle" transform="rotate(-90 343 540)">transcript</text>
+<path d="M525 315 V343" fill="none" stroke="#7C8BA3" stroke-width="1.8" marker-end="url(#m-ctl)" marker-start="url(#m-ctl)" stroke-linejoin="round"/>
+<text x="535" y="334" class="lbl" text-anchor="start" >turns · cancel</text>
+<path d="M525 490 V518" fill="none" stroke="#7C8BA3" stroke-width="1.8" marker-end="url(#m-ctl)" marker-start="url(#m-ctl)" stroke-linejoin="round"/>
+<text x="535" y="509" class="lbl" text-anchor="start" >tool calls</text>
+<path d="M680 245 H738" fill="none" stroke="#7C8BA3" stroke-width="1.8" marker-end="url(#m-ctl)" stroke-linejoin="round"/>
+<text x="710" y="237" class="lbl" text-anchor="middle" >state</text>
+<path d="M680 440 H738" fill="none" stroke="#7C8BA3" stroke-width="1.8" marker-end="url(#m-ctl)" stroke-linejoin="round"/>
+<text x="710" y="432" class="lbl" text-anchor="middle" >deltas</text>
+<path d="M525 735 V783" fill="none" stroke="#7C8BA3" stroke-width="1.8" marker-end="url(#m-ctl)" marker-start="url(#m-ctl)" stroke-linejoin="round"/>
+<text x="535" y="765" class="lbl" text-anchor="start" >read / write</text>
+<path d="M640 345 V330 H1113" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#m-net)" marker-start="url(#m-net)" stroke-linejoin="round"/>
+<text x="1082" y="323" class="lbl" text-anchor="middle" >SSE</text>
+<path d="M1050 440 H1113" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#m-net)" marker-start="url(#m-net)" stroke-linejoin="round"/>
+<text x="1082" y="433" class="lbl" text-anchor="middle" >PCM</text>
+<path d="M1050 630 H1113" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#m-net)" stroke-linejoin="round"/>
+<text x="1082" y="623" class="lbl" text-anchor="middle" >JSON</text>
+<path d="M680 712 H710 V760 H1113" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#m-net)" stroke-linejoin="round"/>
+<text x="1082" y="753" class="lbl" text-anchor="middle" >REST</text>
+</svg>
